@@ -16,23 +16,22 @@ def format_conversation(messages):
 
 
 def classify_inquiry_node(state: Sequence[BaseMessage]):
+    state = [msg for msg in state if isinstance(msg, HumanMessage)]
     return generate_classify_inquiry_chain.invoke({"messages": state})
 
 
 def inquiry_response_node(messages: Sequence[BaseMessage]) -> List[BaseMessage]:
     res = generate_inquiry_response_chain.invoke({"messages": messages})
-    return [HumanMessage(content=res.content)]
+    return [AIMessage(content=res.content)]
 
 
 def no_applicable_response_node(messages: Sequence[BaseMessage]) -> List[BaseMessage]:
-    return [HumanMessage(content="Sorry, we don't have any information about that.")]
+    return [AIMessage(content="Sorry, we don't have any information about that.")]
 
 
 def should_continue(state: List[BaseMessage]):
     if state and state[-1].content.strip().lower() == "other":
         return "OTHER"
-    if len(state) > 2:
-        return END
 
     return "RESPOND"
 
@@ -52,11 +51,9 @@ with SqliteSaver.from_conn_string("langgraph.db") as checkpointer:
 
     graph = builder.compile(checkpointer=checkpointer)
 
-    inputs = HumanMessage(content="""
-        Please tell me if your company has any benefits?
-    """)
+    inputs = HumanMessage(content="""Give me more benefits""")
     response = graph.invoke(inputs, config={"thread_id": 42})
-    print(response)
+    print(format_conversation(messages=response))
 
 # second_input = HumanMessage(content="""
 #     "Do you remember what was initial customer complaint?"
