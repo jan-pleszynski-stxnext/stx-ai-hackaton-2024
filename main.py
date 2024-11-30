@@ -1,16 +1,17 @@
 from typing import List, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.checkpoint.sqlite import SqliteSaver
-from langgraph.graph import END, MessageGraph
-from chains import generate_inquiry_response_chain, generate_classify_inquiry_chain, \
-    response_chains_by_subject
+from langgraph.graph import MessageGraph
+from chains import generate_classify_inquiry_chain, response_chains_by_subject
 
 
 def is_subject(message):
     return message.content.strip().lower() in ["process", "benefits", "details", "other"]
 
+
 def get_subject(message):
     return message.content.strip().lower()
+
 
 def format_conversation(messages):
     formatted_conversation = []
@@ -25,6 +26,7 @@ def format_conversation(messages):
 def classify_inquiry_node(state: Sequence[BaseMessage]):
     state = [msg for msg in state if not is_subject(msg)]
     return generate_classify_inquiry_chain.invoke({"messages": state})
+
 
 def inquiry_response_node_factory(subject: str):
     def inquiry_response_node(messages: Sequence[BaseMessage]) -> List[BaseMessage]:
@@ -61,3 +63,25 @@ with SqliteSaver.from_conn_string("langgraph.db") as checkpointer:
     inputs = HumanMessage(content="""Scoping session?""")
     response = graph.invoke(inputs, config={"thread_id": 42})
     print(format_conversation(messages=response))
+
+
+def run(promt_input, thread_id):
+
+    builder = MessageGraph()
+    builder.add_node("CLASSIFY", classify_inquiry_node)
+    # Build response nodes per subject
+    for subject in response_chains_by_subject.keys():
+        builder.add_node(subject, inquiry_response_node_factory(subject))
+
+    builder.add_node("other", no_applicable_response_node)
+
+    builder.set_entry_point("CLASSIFY")
+    builder.add_conditional_edges("CLASSIFY", select_respond_node)
+
+    with SqliteSaver.from_conn_string("langgraph.db") as checkpointer:
+
+        graph = builder.compile(checkpointer=checkpointer)
+
+        inputs = HumanMessage(content=promt_input)
+        response = graph.invoke(inputs, config={"thread_id": thread_id})
+        print(format_conversation(messages=response))
