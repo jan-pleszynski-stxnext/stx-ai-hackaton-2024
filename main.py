@@ -1,7 +1,16 @@
 from typing import List, Sequence
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import END, MessageGraph
 from chains import generate_inquiry_response_chain, generate_classify_inquiry_chain
+
+def format_conversation(messages):
+    formatted_conversation = []
+    for message in messages:
+        if isinstance(message, HumanMessage):
+            formatted_conversation.append(f"Human:\n{message.content.strip()}")
+        elif isinstance(message, AIMessage):
+            formatted_conversation.append(f"AI:\n{message.content.strip()}")
+    return "\n\n".join(formatted_conversation)
 
 
 def classify_inquiry_node(state: Sequence[BaseMessage]):
@@ -37,4 +46,4 @@ if __name__ == "__main__":
         Please tell me what benefits can I get in the company?
     """)
     response = graph.invoke(inputs)
-    print(response)
+    print(format_conversation(response))
