@@ -3,7 +3,9 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, MessageGraph
 from chains import generate_inquiry_response_chain, generate_classify_inquiry_chain
-from langgraph.checkpoint.memory import MemorySaver
+
+def is_subject(message):
+    return message.content.strip().lower() in ["process", "benefits", "details", "other"]
 
 def format_conversation(messages):
     formatted_conversation = []
@@ -16,7 +18,7 @@ def format_conversation(messages):
 
 
 def classify_inquiry_node(state: Sequence[BaseMessage]):
-    state = [msg for msg in state if isinstance(msg, HumanMessage)]
+    state = [msg for msg in state if not is_subject(msg)]
     return generate_classify_inquiry_chain.invoke({"messages": state})
 
 
