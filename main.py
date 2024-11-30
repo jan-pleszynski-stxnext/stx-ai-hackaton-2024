@@ -1,5 +1,6 @@
 from typing import List, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, MessageGraph
 from chains import generate_inquiry_response_chain, generate_classify_inquiry_chain
 from langgraph.checkpoint.memory import MemorySaver
@@ -44,27 +45,21 @@ builder.set_entry_point("CLASSIFY")
 
 
 builder.add_conditional_edges("CLASSIFY", should_continue)
-# builder.add_edge("CLASSIFY", "RESPOND")
-graph = builder.compile()
 
-checkpointer = MemorySaver()
 
-graph = builder.compile(checkpointer=checkpointer)
 
-if __name__ == "__main__":
-    print("Faq Responder")
+with SqliteSaver.from_conn_string("langgraph.db") as checkpointer:
+
+    graph = builder.compile(checkpointer=checkpointer)
+
     inputs = HumanMessage(content="""
         Please tell me if your company has any benefits?
     """)
     response = graph.invoke(inputs, config={"thread_id": 42})
-    print(format_conversation(response))
-    print("-----------------------")
-    print(checkpointer.__dict__)
-    print(checkpointer)
-    print(checkpointer)
+    print(response)
 
-    # second_input = HumanMessage(content="""
-    #     "Do you remember what was initial customer complaint?"
-    # """)
-    # response = graph.invoke(second_input, config={"thread_id": 42})
-    # print(format_conversation(response))
+# second_input = HumanMessage(content="""
+#     "Do you remember what was initial customer complaint?"
+# """)
+# response = graph.invoke(second_input, config={"thread_id": 42})
+# print(format_conversation(response))
