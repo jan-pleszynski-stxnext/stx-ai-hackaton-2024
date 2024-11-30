@@ -6,4 +6,18 @@ The available topics are:
 - Employment details (Keyword: details)
 - Other (Keyword: other)
 
+
+Example:
+- How many steps has recruitment process?
+- process
+
+- Do you offer any health care options?
+- benefits
+
+- You didn't pay my invoice
+- other
+
+- Do you offer employee contract?
+- details
+
 Please respond with a single word keyword that corresponds to the identified topic. List of available keywords is: [process, benefits, details, other].
