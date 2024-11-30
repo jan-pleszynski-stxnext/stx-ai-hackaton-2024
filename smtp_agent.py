@@ -1,14 +1,18 @@
 import hashlib
 import imaplib
 import email
+import os
 from email.header import decode_header
 import time
+
+from dotenv import load_dotenv
+
 from main import run
 
-
+load_dotenv()
 # Email credentials
-username = 'facker322@gmail.com'
-password = 'iwyu ztpd rcwn rome'
+username = os.getenv("SENDER_EMAIL")
+password = os.getenv('EMAIL_APP_PASSWORD')
 
 
 def connect_to_email():
@@ -73,7 +77,6 @@ def check_new_emails(mail, processed_emails):
     for email_id in email_ids:
         if email_id not in processed_emails:  # Check if email is already processed
             process_email(mail, email_id)
-            break
             processed_emails.add(email_id)
 
 
