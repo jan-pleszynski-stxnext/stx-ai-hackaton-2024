@@ -7,19 +7,19 @@ import time
 
 from dotenv import load_dotenv
 
-from main import run
+from responder import run, get_checkpointer
 
 load_dotenv()
 # Email credentials
 username = os.getenv("SENDER_EMAIL")
-password = os.getenv('EMAIL_APP_PASSWORD')
+password = os.getenv("EMAIL_APP_PASSWORD")
 
 
 def connect_to_email():
     """Establish a connection to the IMAP server and log in."""
-    mail = imaplib.IMAP4_SSL('smtp.gmail.com')
+    mail = imaplib.IMAP4_SSL("smtp.gmail.com")
     mail.login(username, password)
-    mail.select('inbox')
+    mail.select("inbox")
     return mail
 
 
@@ -32,44 +32,44 @@ def normalize_subject(subject):
 
 def process_email(mail, email_id):
     """Fetch and process a specific email by ID."""
-    status, msg = mail.fetch(email_id, '(RFC822)')
+    status, msg = mail.fetch(email_id, "(RFC822)")
     for response_part in msg:
         if isinstance(response_part, tuple):
             # Parse email
             email_message = email.message_from_bytes(response_part[1])
 
             # Decode email subject
-            subject, encoding = decode_header(email_message['Subject'])[0]
+            subject, encoding = decode_header(email_message["Subject"])[0]
             if isinstance(subject, bytes):
-                subject = subject.decode(encoding if encoding else 'utf-8')
+                subject = subject.decode(encoding if encoding else "utf-8")
 
             # Normalize the subject
             normalized_subject = normalize_subject(subject)
 
             # Extract 'From' field
-            sender = email_message['From']
+            sender = email_message["From"]
 
             # Combine 'From' and normalized 'Subject' for hashing
             combined_data = f"From: {sender}\nSubject: {normalized_subject}"
 
             # Generate SHA-256 hash
-            hash_object = hashlib.sha256(combined_data.encode('utf-8'))
+            hash_object = hashlib.sha256(combined_data.encode("utf-8"))
             email_hash = hash_object.hexdigest()
 
             # Extract email body
             if email_message.is_multipart():
                 continue
             else:
-                body = email_message.get_payload(decode=True).decode('utf-8')
-                print(f'Body: {body}')
+                body = email_message.get_payload(decode=True).decode("utf-8")
+                print(f"Body: {body}")
 
-            run(body, email_hash)
+            run(body, email_hash, get_checkpointer())
 
 
 def check_new_emails(mail, processed_emails):
     """Check for new emails and process them."""
-    status, messages = mail.search(None, 'UNSEEN')  # Search for unread emails
-    if status != 'OK':
+    status, messages = mail.search(None, "UNSEEN")  # Search for unread emails
+    if status != "OK":
         print("Failed to fetch emails.")
         return
 
