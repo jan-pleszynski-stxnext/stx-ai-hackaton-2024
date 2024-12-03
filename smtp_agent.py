@@ -82,6 +82,9 @@ def process_email(mail, email_id):
 
                 run(body, message_id, get_checkpointer())
 
+                # TODO: Send response from AI model to the sender
+                # TBD
+
             except Exception as e:
                 print(f"Error parsing email ID {email_id}: {e}")
 
